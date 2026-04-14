@@ -62,17 +62,17 @@ interface FormState {
 }
 
 const INITIAL_FORM: FormState = {
-    prSubject: "",
-    prType: "product",
-    prTypeCustom: "",
-    brandName: "데스커(DESKER)",
-    productName: "",
-    referenceUrl: "",
-    referenceText: "",
-    referenceFileName: "",
-    referenceFileContent: "",
-    imageName: "",
-    imageContent: "",
+    prSubject: "" ,
+    prType: "product" ,
+    prTypeCustom: "" ,
+    brandName: "퍼시스(FURSYS)" ,
+    productName: "" ,
+    referenceUrl: "" ,
+    referenceText: "" ,
+    referenceFileName: "" ,
+    referenceFileContent: "" ,
+    imageName: "" ,
+    imageContent: "" ,
     generateImage: false,
     llmQuestions: [""],
     llmAnswers: [""],
@@ -425,7 +425,7 @@ function GeneratorContent() {
                                 <div className="space-y-2">
                                     <Label className="font-semibold">보도자료 주제 <span className="text-red-500">*</span></Label>
                                     <Input
-                                        placeholder="예: 데스커 모션데스크 신제품 출시 / 여름 할인 프로모션 / ESG 협업 캠페인"
+                                        placeholder="예: 퍼시스 에어리스(AERIS) 신제품 출시 / 오피스 환경 진단 서비스 / 스마트 오피스 쇼룸 오픈"
                                         value={form.prSubject}
                                         onChange={e => setField("prSubject", e.target.value)}
                                         className="text-base"
@@ -466,11 +466,11 @@ function GeneratorContent() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>브랜드명</Label>
-                                        <Input value={form.brandName} onChange={e => setField("brandName", e.target.value)} placeholder="예: 데스커(DESKER)" />
+                                        <Input value={form.brandName} onChange={e => setField("brandName", e.target.value)} placeholder="예: 퍼시스(FURSYS)" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>제품/캠페인명 <span className="text-xs text-muted-foreground">(선택)</span></Label>
-                                        <Input value={form.productName} onChange={e => setField("productName", e.target.value)} placeholder="예: 모션데스크 알파" />
+                                        <Input value={form.productName} onChange={e => setField("productName", e.target.value)} placeholder="예: 에어리스(AERIS) 의자" />
                                     </div>
                                 </div>
                             </CardContent>

@@ -51,7 +51,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
-        <h1 className="text-xl font-bold tracking-tight text-primary">PressCraft AI</h1>
+        <h1 className="text-xl font-bold tracking-tight text-primary">FURSYS Press AI</h1>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

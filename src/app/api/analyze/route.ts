@@ -23,26 +23,26 @@ export async function POST(req: NextRequest) {
             // Allow time to simulate scraping
             await new Promise(r => setTimeout(r, 2000));
 
-            if (url.includes("612")) {
+            if (url.includes("aeris")) {
                 return NextResponse.json({
                     success: true,
                     data: {
-                        title: "1인용 컴퓨터 데스크 (DSAD612)",
-                        description: "기본에 충실한 저소음 1인용 컴퓨터 책상",
-                        h1: "컴퓨터 데스크 1200",
-                        ogTitle: "데스커 컴퓨터 데스크 1200",
-                        ogDesc: "28mm 고밀도 상판과 빌트인 멀티탭이 적용된 데스커의 베스트셀러",
+                        title: "퍼시스 에어리스 (AERIS) 사무용 의자",
+                        description: "사용자의 움직임에 민감하게 반응하는 인체공학적 의자",
+                        h1: "에어리스 사무용 의자",
+                        ogTitle: "FURSYS AERIS 에어리스 의자",
+                        ogDesc: "유연한 링크 구조로 어떤 자세에서도 편안함을 제공하는 퍼시스 기술력의 정수",
                         jsonLd: null,
-                        brand: "Desker",
-                        productName: "컴퓨터 데스크 1200",
-                        oneLineDef: "기본에 충실한 저소음 1인용 컴퓨터 책상",
-                        context: "재택근무, 홈오피스",
-                        keyMessages: ["몰입하는 환경 조성", "깔끔한 배선 정리"],
-                        features: ["28mm 고밀도 상판", "빌트인 멀티탭", "친환경 자재 E0 등급"],
-                        specs: ["규격: W1200 * D700 * H720", "소재: 목재, 스틸"],
-                        releaseDate: "2023-01-01",
-                        channel: "공식 홈페이지",
-                        promotion: "신규 가입 5% 할인"
+                        brand: "Fursys",
+                        productName: "에어리스(AERIS)",
+                        oneLineDef: "사용자의 움직임에 유연하게 반응하는 자유로운 오피스 체어",
+                        context: "스마트 오피스, 워크 어라운드 자세 대응",
+                        keyMessages: ["인체공학적 디자인", "유연한 자세 대응", "디자인 어워드 수상"],
+                        features: ["리드미컬한 움직임의 링크 시스템", "통기성 뛰어난 메쉬 소재", "조절 가능한 팔걸이"],
+                        specs: ["W680 * D620 * H1150", "소재: 메쉬, 플라스틱, 스틸"],
+                        releaseDate: "2024-03-01",
+                        channel: "공식 홈페이지 및 오피스 전시장",
+                        promotion: "신제품 런칭 기념 체험단 모집"
                     }
                 });
             } else {
