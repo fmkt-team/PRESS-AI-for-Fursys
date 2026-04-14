@@ -8,10 +8,9 @@ const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 /**
- * [Vercel 최적화 통합 분석 API]
- * 1. Firecrawl (우선순위 1) - 사용자 요청
- * 2. Apify (우선순위 2) - 대체 수단
- * 3. Mock (키 누락 시) - 퍼시스 전용 데이터
+ * [Vercel 최적화 통합 분석 API - 고도화 버전]
+ * 1. 9초 타임아웃 제어 (Vercel 10초 제한 대응)
+ * 2. 실패 시 '프리뷰 모드' 자동 전환 (에러 차단)
  */
 export async function POST(req: NextRequest) {
     try {
@@ -22,82 +21,30 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "URL is required" }, { status: 400 });
         }
 
-        console.log(`[Analyze] URL: ${url}`);
+        console.log(`[Analyze] URL Start: ${url}`);
 
-        // 1. FIRECRAWL 연동 (사용자 최우선 요청)
-        if (FIRECRAWL_API_KEY && FIRECRAWL_API_KEY !== "firecrawl_api_key_placeholder") {
-            try {
-                console.log("[Analyze] Attempting Firecrawl...");
-                const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${FIRECRAWL_API_KEY}`,
-                    },
-                    body: JSON.stringify({
-                        url,
-                        formats: ["markdown"], // Vercel 타임아웃 방지를 위해 무거운 extract 대신 markdown만 우선 처리
-                        timeout: 15000,
-                    }),
-                });
+        // 타임아웃 제어 (9초면 자가 종료하여 Vercel 크래시 방지)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Analysis timeout")), 9000)
+        );
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data?.markdown) {
-                        console.log("[Analyze] Firecrawl Success. Processing with Groq...");
-                        return await processWithGroq(result.data.markdown, result.data.metadata?.title || "");
-                    }
-                }
-                console.warn("[Analyze] Firecrawl failed or returned no data. Falling back...");
-            } catch (fe) {
-                console.error("[Analyze] Firecrawl Error:", fe);
-            }
-        }
-
-        // 2. APIFY 연동 (대체)
-        if (APIFY_TOKEN && APIFY_TOKEN !== "apify_api_token_placeholder") {
-            try {
-                console.log("[Analyze] Attempting Apify...");
-                const client = new ApifyClient({ token: APIFY_TOKEN });
-                const run = await client.actor("apify/website-content-crawler").call({
-                    startUrls: [{ url }],
-                    maxCrawlDepth: 0,
-                    maxCrawlPages: 1,
-                    crawlerType: "playwright:firefox",
-                });
-                const { items } = await client.dataset(run.defaultDatasetId).listItems();
-                const crawlResult = items[0] as any;
-                const text = crawlResult?.text || crawlResult?.markdown || "";
-                
-                if (text) {
-                    console.log("[Analyze] Apify Success. Processing with Groq...");
-                    return await processWithGroq(text, crawlResult?.metadata?.title || "");
-                }
-            } catch (ae) {
-                console.error("[Analyze] Apify Error:", ae);
-            }
-        }
-
-        // 3. MOCK FALLBACK (키 누락 시)
-        console.log("No valid API keys. Using Fursys Mock Data.");
-        if (url.includes("aeris")) {
+        try {
+            const analysisResult = await Promise.race([
+                performAnalysis(url),
+                timeoutPromise
+            ]);
+            return NextResponse.json({ success: true, data: analysisResult });
+        } catch (e: any) {
+            console.warn(`[Analyze] Analysis failed or timed out: ${e.message}. Using Preview Mode.`);
+            
+            // 실패 시 사용자 차단 대신 '프리뷰 데이터' 반환
             return NextResponse.json({
                 success: true,
-                data: {
-                    brandName: "퍼시스(FURSYS)",
-                    productName: "에어리스(AERIS)",
-                    definition: "사용자의 움직임에 유연하게 반응하는 자유로운 오피스 체어",
-                    features: ["리드미컬한 움직임의 링크 시스템", "통기성 뛰어난 메쉬 소재", "조절 가능한 팔걸이"],
-                    coreMessages: ["인체공학적 디자인", "유연한 자세 대응", "디자인 어워드 수상"],
-                    markdown: "Fursys AERIS 제품 상세 내용 (Mock)"
-                }
+                isPreview: true,
+                data: getMockData(url),
+                message: "실시간 분석이 지연되어 프리뷰 데이터를 로드했습니다. 직접 수정이 가능합니다."
             });
         }
-
-        return NextResponse.json({
-            success: false,
-            error: "API 키가 구성되지 않았거나 타임아웃 되었습니다. Vercel 설정에서 키를 확인해 주세요."
-        }, { status: 500 });
 
     } catch (error: any) {
         console.error("Analysis Fatal Error:", error);
@@ -106,21 +53,54 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Groq를 사용하여 텍스트에서 제품 정보 추출
+ * 실제 분석 로직
  */
-async function processWithGroq(text: string, title: string) {
-    if (!GROQ_API_KEY) {
-        return NextResponse.json({
-            success: true,
-            data: { brandName: "퍼시스(FURSYS)", productName: title, markdown: text }
+async function performAnalysis(url: string) {
+    // 1. FIRECRAWL 시도
+    if (FIRECRAWL_API_KEY && FIRECRAWL_API_KEY !== "firecrawl_api_key_placeholder") {
+        const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${FIRECRAWL_API_KEY}`,
+            },
+            body: JSON.stringify({ url, formats: ["markdown"], timeout: 8000 }),
         });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data?.markdown) {
+                return await extractWithGroq(result.data.markdown, result.data.metadata?.title || "");
+            }
+        }
     }
 
-    const groq = new Groq({ apiKey: GROQ_API_KEY });
-    const prompt = `아래 제품 콘텐츠에서 JSON으로 정보를 추출해.
-{"brandName":"브랜드명","productName":"제품명","definition":"한 줄 슬로건","features":["특징1","특징2"],"coreMessages":["가치1","가치2"]}
+    // 2. APIFY 시도
+    if (APIFY_TOKEN && APIFY_TOKEN !== "apify_api_token_placeholder") {
+        const client = new ApifyClient({ token: APIFY_TOKEN });
+        const run = await client.actor("apify/website-content-crawler").call({
+            startUrls: [{ url }],
+            maxCrawlDepth: 0,
+            maxCrawlPages: 1,
+        });
+        const { items } = await client.dataset(run.defaultDatasetId).listItems();
+        const crawlResult = items[0] as any;
+        if (crawlResult?.text) {
+            return await extractWithGroq(crawlResult.text, crawlResult.metadata?.title || "");
+        }
+    }
 
-콘텐츠: ${text.substring(0, 8000)}`;
+    throw new Error("No analysis engine available or failed");
+}
+
+/**
+ * AI 추출 로직
+ */
+async function extractWithGroq(text: string, title: string) {
+    if (!GROQ_API_KEY) return { brandName: "퍼시스(FURSYS)", productName: title, markdown: text };
+
+    const groq = new Groq({ apiKey: GROQ_API_KEY });
+    const prompt = `Extract product info as JSON: {"brandName":"${text.includes("FURSYS") ? "퍼시스(FURSYS)" : "브랜드명"}","productName":"제품명","definition":"슬로건","features":["특징1"],"coreMessages":["가치1"]}\n\nContent: ${text.substring(0, 5000)}`;
 
     const response = await groq.chat.completions.create({
         model: GROQ_MODEL,
@@ -129,5 +109,19 @@ async function processWithGroq(text: string, title: string) {
     });
 
     const data = JSON.parse(response.choices[0].message.content || "{}");
-    return NextResponse.json({ success: true, data: { ...data, markdown: text } });
+    return { ...data, markdown: text };
+}
+
+/**
+ * 실패 시 제공할 기본 퍼시스 데이터
+ */
+function getMockData(url: string) {
+    return {
+        brandName: "퍼시스(FURSYS)",
+        productName: url.includes("aeris") ? "에어리스(AERIS)" : "퍼시스 주력 제품",
+        definition: "사용자의 움직임과 업무 방식을 고려한 인체공학적 오피스 솔루션",
+        features: ["최첨단 인체공학 설계", "프리미엄 소재 사용", "공간 효율성 극대화"],
+        coreMessages: ["일의 본질에 집중하는 사무 환경", "지속 가능한 디자인 가치"],
+        markdown: "정보를 실시간으로 가져오지 못했습니다. 본문의 상세 내용을 직접 확인해 주세요."
+    };
 }
