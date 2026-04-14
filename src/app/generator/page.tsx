@@ -248,35 +248,30 @@ function GeneratorContent() {
         if (!form.referenceUrl.trim()) return;
         setAnalysisStatus("loading");
         try {
-            const response = await fetch("/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: form.referenceUrl }),
-            });
-            
-            const res = await response.json();
+            const { analyzeLink } = await import("../actions/analyze-link");
+            const res = await analyzeLink(form.referenceUrl);
             
             if (res.success && res.data) {
-                // API Route의 데이터를 폼 데이터 형식으로 매핑
+                // 서버 액션 데이터를 폼 데이터로 매핑
                 const d = res.data;
-                setField("brandName", d.brandName || d.brand || "퍼시스(FURSYS)");
+                setField("brandName", d.brandName || "퍼시스(FURSYS)");
                 setField("productName", d.productName || "");
-                setField("referenceFileContent", d.markdown || "");
+                setField("referenceFileContent", res.markdown || "");
                 
-                // 추가 마케팅 정보가 있다면 레퍼런스 텍스트에 요약해서 넣어줌
+                // 마당 정보 요약
                 const extraInfo = `
-[분석 결과 요약]
-- 정의: ${d.definition || d.oneLineDef || ""}
+[Firecrawl 분석 결과]
+- 정의: ${d.definition || ""}
 - 특징: ${(d.features || []).join(", ")}
-- 핵심 메시지: ${(d.coreMessages || d.keyMessages || []).join(", ")}
-- 판매 채널: ${d.channels || d.channel || ""}
+- 마케팅 메시지: ${(d.coreMessages || []).join(", ")}
+- 타겟/맥락: ${d.usageContext || ""}
                 `.trim();
                 
                 setField("referenceText", extraInfo);
                 setAnalysisStatus("done");
             } else {
                 setAnalysisStatus("error");
-                alert("URL 분석 실패: " + (res.error || "알 수 없는 오류"));
+                alert("URL 분석 실패: " + (res.message || "알 수 없는 오류"));
             }
         } catch (e: any) {
             setAnalysisStatus("error");
@@ -507,7 +502,7 @@ function GeneratorContent() {
 
                                 {/* URL */}
                                 <div className="space-y-2">
-                                    <Label>URL 분석 <span className="text-xs text-slate-400">(Firecrawl 활용)</span></Label>
+                                    <Label>URL 분석 <span className="text-xs text-slate-400">(상세페이지 주소)</span></Label>
                                     <div className="flex gap-2">
                                         <Input
                                             placeholder="https://..."
