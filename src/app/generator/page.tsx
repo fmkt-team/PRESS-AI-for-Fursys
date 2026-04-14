@@ -248,14 +248,35 @@ function GeneratorContent() {
         if (!form.referenceUrl.trim()) return;
         setAnalysisStatus("loading");
         try {
-            const { analyzeLink } = await import("../actions/analyze-link");
-            const res = await analyzeLink(form.referenceUrl);
-            if (res.success) {
-                setField("referenceFileContent", res.markdown || "");
+            const response = await fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: form.referenceUrl }),
+            });
+            
+            const res = await response.json();
+            
+            if (res.success && res.data) {
+                // API Route의 데이터를 폼 데이터 형식으로 매핑
+                const d = res.data;
+                setField("brandName", d.brandName || d.brand || "퍼시스(FURSYS)");
+                setField("productName", d.productName || "");
+                setField("referenceFileContent", d.markdown || "");
+                
+                // 추가 마케팅 정보가 있다면 레퍼런스 텍스트에 요약해서 넣어줌
+                const extraInfo = `
+[분석 결과 요약]
+- 정의: ${d.definition || d.oneLineDef || ""}
+- 특징: ${(d.features || []).join(", ")}
+- 핵심 메시지: ${(d.coreMessages || d.keyMessages || []).join(", ")}
+- 판매 채널: ${d.channels || d.channel || ""}
+                `.trim();
+                
+                setField("referenceText", extraInfo);
                 setAnalysisStatus("done");
             } else {
                 setAnalysisStatus("error");
-                alert("URL 분석 실패: " + res.message);
+                alert("URL 분석 실패: " + (res.error || "알 수 없는 오류"));
             }
         } catch (e: any) {
             setAnalysisStatus("error");
