@@ -248,30 +248,34 @@ function GeneratorContent() {
         if (!form.referenceUrl.trim()) return;
         setAnalysisStatus("loading");
         try {
-            const { analyzeLink } = await import("../actions/analyze-link");
-            const res = await analyzeLink(form.referenceUrl);
+            // 안정성을 위해 서버 액션 대신 일반 API Route 호출
+            const response = await fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: form.referenceUrl }),
+            });
+            
+            const res = await response.json();
             
             if (res.success && res.data) {
-                // 서버 액션 데이터를 폼 데이터로 매핑
                 const d = res.data;
                 setField("brandName", d.brandName || "퍼시스(FURSYS)");
                 setField("productName", d.productName || "");
-                setField("referenceFileContent", res.markdown || "");
+                setField("referenceFileContent", d.markdown || "");
                 
-                // 마당 정보 요약
                 const extraInfo = `
-[Firecrawl 분석 결과]
+[분석 결과 요약]
 - 정의: ${d.definition || ""}
 - 특징: ${(d.features || []).join(", ")}
-- 마케팅 메시지: ${(d.coreMessages || []).join(", ")}
-- 타겟/맥락: ${d.usageContext || ""}
+- 핵심 메시지: ${(d.coreMessages || []).join(", ")}
                 `.trim();
                 
                 setField("referenceText", extraInfo);
                 setAnalysisStatus("done");
             } else {
                 setAnalysisStatus("error");
-                alert("URL 분석 실패: " + (res.message || "알 수 없는 오류"));
+                // API Route는 상세한 에러 메시지를 반환하므로 이를 활용
+                alert("URL 분석 실패: " + (res.error || "상세 정보를 가져올 수 없습니다."));
             }
         } catch (e: any) {
             setAnalysisStatus("error");
