@@ -94,13 +94,13 @@ export default function PastPrAdminPage() {
                         multiple
                         accept=".pdf,.docx,.doc,.txt"
                         onChange={handleFileChange}
-                        className="w-full border p-2.5 rounded bg-gray-50 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="w-full border p-2.5 rounded bg-gray-50 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-black transition-all"
                     />
 
                     {files.length > 0 && (
                         <div className="mt-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">
-                                📚 현제 {files.length}개의 파일이 대기 중입니다:
+                                📚 현재 {files.length}개의 파일이 대기 중입니다:
                             </p>
                             <ul className="space-y-2">
                                 {files.map((file, idx) => (
@@ -131,7 +131,7 @@ export default function PastPrAdminPage() {
                     <button
                         type="submit"
                         disabled={loading || files.length === 0}
-                        className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        className="w-full bg-black text-white font-bold py-3 px-6 rounded hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-md"
                     >
                         {loading ? "전체 파일 텍스트 추출 및 AI 임베딩 학습 중..." : `대기 중인 ${files.length}개 보도자료 일괄 학습하기`}
                     </button>

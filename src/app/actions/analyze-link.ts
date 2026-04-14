@@ -100,14 +100,13 @@ async function scrapeAndExtract(url: string): Promise<{
  * Fallback Parser (Firecrawl extract 실패 시 사용)
  */
 function parseTextFallback(rawText: string, metaTitle: string, url: string) {
-    let brandName = "정보 없음";
-    if (rawText.includes("데스커") || url.includes("desker")) brandName = "데스커(DESKER)";
-
+    let brandName = "퍼시스(FURSYS)";
+    
     let productName = metaTitle.split("|")[0].trim();
 
     // 간단한 키워드 기반 특징 추출
     const lines = rawText.split("\n").filter(l => l.trim().length > 10);
-    const features = lines.filter(l => l.includes("기능") || l.includes("소재") || l.includes("mm")).slice(0, 3);
+    const features = lines.filter(l => l.includes("기능") || l.includes("소재") || l.includes("mm") || l.includes("인체")).slice(0, 3);
 
     return {
         brandName,

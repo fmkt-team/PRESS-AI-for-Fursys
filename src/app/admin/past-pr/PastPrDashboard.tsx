@@ -52,7 +52,7 @@ export default function PastPrDashboard() {
         <div className="mt-12">
             <h2 className="text-xl font-bold mb-6 border-b pb-2 flex items-center justify-between">
                 <span>📚 분류별 학습된 보도자료 현황</span>
-                <span className="text-sm font-normal bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                <span className="text-sm font-normal bg-black text-white px-3 py-1 rounded-full">
                     총 {pressReleases.length}개 학습 완료
                 </span>
             </h2>
